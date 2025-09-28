@@ -2,9 +2,11 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import yt_dlp
+from gtts import gTTS
 import os
-from dotenv import load_dotenv
 import asyncio
+import functools
+from dotenv import load_dotenv
 
 # --- Load .env ---
 load_dotenv()
@@ -14,7 +16,7 @@ if not TOKEN:
 
 intents = discord.Intents.default()
 intents.voice_states = True
-intents.message_content = True  # ✅ Bật intent đọc nội dung tin nhắn
+intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # --- YT-DLP config ---
@@ -28,8 +30,7 @@ ytdlp_opts = {
 queues = {}
 titles = {}
 play_channels = {}
-now_playing_messages = {}  # Lưu message embed để auto update
-
+now_playing_messages = {}
 
 # --- Audio extraction ---
 def get_audio_source(url: str):
@@ -41,7 +42,6 @@ def get_audio_source(url: str):
             return urls, names
         else:
             return [info['url']], [info.get('title', 'Không rõ')]
-
 
 # --- Music Controls ---
 class MusicControls(discord.ui.View):
@@ -87,7 +87,6 @@ class MusicControls(discord.ui.View):
         else:
             await interaction.response.send_message("⚠️ Bot không ở voice channel.", ephemeral=True)
 
-
 # --- Embed Queue ---
 def format_queue_embed(guild_id):
     queue_list = titles.get(guild_id, [])
@@ -98,7 +97,6 @@ def format_queue_embed(guild_id):
         color=discord.Color.blurple()
     )
     return embed
-
 
 # --- Play next song ---
 def play_next(guild_id):
@@ -112,13 +110,11 @@ def play_next(guild_id):
                 before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
                 options="-vn"
             )
-
             def after_play(error):
                 if error:
                     print(f"Lỗi khi phát nhạc: {error}")
                 asyncio.run_coroutine_threadsafe(update_now_playing(guild_id), bot.loop)
                 play_next(guild_id)
-
             vc.play(source, after=after_play)
             asyncio.run_coroutine_threadsafe(update_now_playing(guild_id, title), bot.loop)
     else:
@@ -129,7 +125,6 @@ def play_next(guild_id):
                 asyncio.run_coroutine_threadsafe(
                     play_channels[guild_id].send("👋 Hết nhạc, bot sẽ rời khỏi kênh."), bot.loop
                 )
-
 
 # --- Update embed ---
 async def update_now_playing(guild_id, title=None):
@@ -150,34 +145,35 @@ async def update_now_playing(guild_id, title=None):
         msg = await channel.send(embed=embed, view=MusicControls(discord.utils.get(bot.voice_clients, guild__id=guild_id), guild_id))
         now_playing_messages[guild_id] = msg
 
-
 # --- Bot ready ---
 @bot.event
 async def on_ready():
     print(f"✅ Bot đã đăng nhập: {bot.user}")
+    # Sync từng guild ngay lập tức
     for guild in bot.guilds:
         try:
             await bot.tree.sync(guild=discord.Object(id=guild.id))
-            print(f"🔗 Slash commands synced cho guild: {guild.name}")
+            print(f"🔗 Commands synced cho guild: {guild.name}")
         except Exception as e:
             print(f"⚠️ Lỗi sync cho {guild.name}: {e}")
+    # Đồng thời sync global
+    try:
+        await bot.tree.sync()
+        print("🔗 Commands global sync complete")
+    except Exception as e:
+        print(f"⚠️ Lỗi global sync: {e}")
 
-
-# --- Play music ---
+# --- Play music command ---
 @bot.tree.command(name="nhac", description="Phát nhạc hoặc playlist từ YouTube")
 @app_commands.describe(url="Link YouTube (video hoặc playlist)")
 async def nhac(interaction: discord.Interaction, url: str):
-    await interaction.response.defer(ephemeral=True)  # tránh lỗi Unknown interaction
-
+    await interaction.response.defer(ephemeral=True)
     if not interaction.user.voice:
         await interaction.followup.send("❌ Bạn phải ở trong voice channel trước.", ephemeral=True)
         return
-
     vc = interaction.guild.voice_client
     if vc is None:
-        channel = interaction.user.voice.channel
-        vc = await channel.connect()
-
+        vc = await interaction.user.voice.channel.connect()
     try:
         play_channels[interaction.guild.id] = interaction.channel
         urls, names = get_audio_source(url)
@@ -189,6 +185,33 @@ async def nhac(interaction: discord.Interaction, url: str):
     except Exception as e:
         await interaction.followup.send(f"❌ Lỗi khi phát nhạc: {e}", ephemeral=True)
 
+# --- Text to Speech command ---
+@bot.tree.command(name="noichuyen", description="Chuyển văn bản thành giọng nói (tiếng Việt)")
+async def noichuyen(interaction: discord.Interaction, text: str):
+    await interaction.response.defer()
+    if not interaction.user.voice or not interaction.user.voice.channel:
+        await interaction.followup.send("❌ Bạn cần vào voice channel trước.")
+        return
+    vc = interaction.guild.voice_client
+    if vc is None:
+        vc = await interaction.user.voice.channel.connect()
+    try:
+        filename = f"tts_{interaction.guild.id}.mp3"
+        tts = gTTS(text=text, lang="vi")
+        tts.save(filename)
+        if vc.is_playing():
+            vc.stop()
+        def after_play(error, file=filename):
+            if os.path.exists(file):
+                try:
+                    os.remove(file)
+                except Exception as e:
+                    print(f"Lỗi xóa file {file}: {e}")
+        source = discord.FFmpegPCMAudio(filename)
+        vc.play(source, after=functools.partial(after_play))
+        await interaction.followup.send(f"🗣 Bot đang đọc: **{text}**")
+    except Exception as e:
+        await interaction.followup.send(f"❌ Lỗi khi chuyển văn bản thành giọng nói: {e}")
 
 # --- Auto leave ---
 @bot.event
@@ -199,7 +222,5 @@ async def on_voice_state_update(member, before, after):
             if vc.guild.id in play_channels:
                 await play_channels[vc.guild.id].send("👋 Mọi người đã rời kênh, bot sẽ thoát.")
 
-
 # --- Run bot ---
 bot.run(TOKEN)
-
