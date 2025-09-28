@@ -1,6 +1,5 @@
-import nextcord as discord
+import nextcord
 from nextcord.ext import commands
-from nextcord import app_commands
 import yt_dlp
 import os
 from dotenv import load_dotenv
@@ -12,7 +11,7 @@ TOKEN = os.getenv("TOKEN")
 if not TOKEN:
     raise ValueError("❌ Không tìm thấy TOKEN trong .env")
 
-intents = discord.Intents.default()
+intents = nextcord.Intents.default()
 intents.voice_states = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -43,8 +42,8 @@ def get_audio_source(url: str):
 
 
 # --- Music Controls ---
-class MusicControls(discord.ui.View):
-    def __init__(self, vc: discord.VoiceClient, guild_id: int):
+class MusicControls(nextcord.ui.View):
+    def __init__(self, vc: nextcord.VoiceClient, guild_id: int):
         super().__init__(timeout=None)
         self.vc = vc
         self.guild_id = guild_id
@@ -56,8 +55,8 @@ class MusicControls(discord.ui.View):
             if getattr(child, "custom_id", "") == "pause_resume":
                 child.label = "▶️ Tiếp tục" if self.paused else "⏸️ Tạm dừng"
 
-    @discord.ui.button(label="⏸️ Tạm dừng", style=discord.ButtonStyle.secondary, custom_id="pause_resume")
-    async def pause_resume(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @nextcord.ui.button(label="⏸️ Tạm dừng", style=nextcord.ButtonStyle.secondary, custom_id="pause_resume")
+    async def pause_resume(self, interaction: nextcord.Interaction, button: nextcord.ui.Button):
         if self.vc.is_playing():
             self.vc.pause()
             self.paused = True
@@ -67,16 +66,16 @@ class MusicControls(discord.ui.View):
         self.update_buttons_label()
         await interaction.response.edit_message(view=self)
 
-    @discord.ui.button(label="⏭️ Skip", style=discord.ButtonStyle.primary)
-    async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @nextcord.ui.button(label="⏭️ Skip", style=nextcord.ButtonStyle.primary)
+    async def skip(self, interaction: nextcord.Interaction, button: nextcord.ui.Button):
         if self.vc.is_playing() or self.vc.is_paused():
             self.vc.stop()
             await interaction.response.send_message("⏭️ Bỏ qua bài hiện tại", ephemeral=True)
         else:
             await interaction.response.send_message("⚠️ Không có gì để skip", ephemeral=True)
 
-    @discord.ui.button(label="⏹️ Stop Bot", style=discord.ButtonStyle.danger)
-    async def stop_bot(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @nextcord.ui.button(label="⏹️ Stop Bot", style=nextcord.ButtonStyle.danger)
+    async def stop_bot(self, interaction: nextcord.Interaction, button: nextcord.ui.Button):
         vc = interaction.guild.voice_client
         if vc:
             queues[self.guild_id] = []
@@ -91,10 +90,10 @@ class MusicControls(discord.ui.View):
 def format_queue_embed(guild_id):
     queue_list = titles.get(guild_id, [])
     description = "\n".join(f"{i+1}. {t}" for i, t in enumerate(queue_list)) or "📭 Hàng chờ trống."
-    embed = discord.Embed(
+    embed = nextcord.Embed(
         title="🎶 Hàng chờ nhạc",
         description=description,
-        color=discord.Color.blurple()
+        color=nextcord.Color.blurple()
     )
     return embed
 
@@ -104,9 +103,9 @@ def play_next(guild_id):
     if queues.get(guild_id):
         url = queues[guild_id].pop(0)
         title = titles[guild_id].pop(0)
-        vc = discord.utils.get(bot.voice_clients, guild__id=guild_id)
+        vc = nextcord.utils.get(bot.voice_clients, guild__id=guild_id)
         if vc:
-            source = discord.FFmpegPCMAudio(
+            source = nextcord.FFmpegPCMAudio(
                 url,
                 before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
                 options="-vn"
@@ -121,7 +120,7 @@ def play_next(guild_id):
             vc.play(source, after=after_play)
             asyncio.run_coroutine_threadsafe(update_now_playing(guild_id, title), bot.loop)
     else:
-        vc = discord.utils.get(bot.voice_clients, guild__id=guild_id)
+        vc = nextcord.utils.get(bot.voice_clients, guild__id=guild_id)
         if vc and not vc.is_playing():
             asyncio.run_coroutine_threadsafe(vc.disconnect(), bot.loop)
             if guild_id in play_channels:
@@ -142,11 +141,11 @@ async def update_now_playing(guild_id, title=None):
     if message:
         try:
             await message.edit(embed=embed)
-        except discord.NotFound:
-            msg = await channel.send(embed=embed, view=MusicControls(discord.utils.get(bot.voice_clients, guild__id=guild_id), guild_id))
+        except nextcord.NotFound:
+            msg = await channel.send(embed=embed, view=MusicControls(nextcord.utils.get(bot.voice_clients, guild__id=guild_id), guild_id))
             now_playing_messages[guild_id] = msg
     else:
-        msg = await channel.send(embed=embed, view=MusicControls(discord.utils.get(bot.voice_clients, guild__id=guild_id), guild_id))
+        msg = await channel.send(embed=embed, view=MusicControls(nextcord.utils.get(bot.voice_clients, guild__id=guild_id), guild_id))
         now_playing_messages[guild_id] = msg
 
 
@@ -154,18 +153,11 @@ async def update_now_playing(guild_id, title=None):
 @bot.event
 async def on_ready():
     print(f"✅ Bot đã đăng nhập: {bot.user}")
-    for guild in bot.guilds:
-        try:
-            await bot.tree.sync(guild=discord.Object(id=guild.id))
-            print(f"🔗 Slash commands synced cho guild: {guild.name}")
-        except Exception as e:
-            print(f"⚠️ Lỗi sync cho {guild.name}: {e}")
 
 
-# --- Play music ---
-@bot.tree.command(name="nhac", description="Phát nhạc hoặc playlist từ YouTube")
-@app_commands.describe(url="Link YouTube (video hoặc playlist)")
-async def nhac(interaction: discord.Interaction, url: str):
+# --- Slash command nhạc ---
+@bot.slash_command(name="nhac", description="Phát nhạc hoặc playlist từ YouTube")
+async def nhac(interaction: nextcord.Interaction, url: str):
     await interaction.response.defer(ephemeral=True)  # tránh lỗi Unknown interaction
 
     if not interaction.user.voice:
@@ -201,4 +193,3 @@ async def on_voice_state_update(member, before, after):
 
 # --- Run bot ---
 bot.run(TOKEN)
-
