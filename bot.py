@@ -14,6 +14,7 @@ if not TOKEN:
 
 intents = discord.Intents.default()
 intents.voice_states = True
+intents.message_content = True  # ✅ Bật intent đọc nội dung tin nhắn
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # --- YT-DLP config ---
@@ -201,3 +202,4 @@ async def on_voice_state_update(member, before, after):
 
 # --- Run bot ---
 bot.run(TOKEN)
+
