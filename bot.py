@@ -14,10 +14,11 @@ TOKEN = os.getenv("TOKEN")
 if not TOKEN:
     raise ValueError("❌ Không tìm thấy TOKEN trong .env")
 
+# Prefix h! cho bot
 intents = discord.Intents.default()
 intents.voice_states = True
 intents.message_content = True
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="h!", intents=intents)
 
 # --- YT-DLP config ---
 ytdlp_opts = {
@@ -123,7 +124,7 @@ def play_next(guild_id):
             asyncio.run_coroutine_threadsafe(vc.disconnect(), bot.loop)
             if guild_id in play_channels:
                 asyncio.run_coroutine_threadsafe(
-                    play_channels[guild_id].send("👋 Hết nhạc, bot sẽ rời khỏi kênh."), bot.loop
+                    play_channels[guild_id].send("👋 Bot đã rời kênh"), bot.loop
                 )
 
 # --- Update embed ---
@@ -212,6 +213,18 @@ async def noichuyen(interaction: discord.Interaction, text: str):
         await interaction.followup.send(f"🗣 Bot đang đọc: **{text}**")
     except Exception as e:
         await interaction.followup.send(f"❌ Lỗi khi chuyển văn bản thành giọng nói: {e}")
+
+# --- Prefix command h!leave ---
+@bot.command(name="leave")
+async def h_leave(ctx: commands.Context):
+    vc = ctx.guild.voice_client
+    if vc:
+        queues[ctx.guild.id] = []
+        titles[ctx.guild.id] = []
+        await vc.disconnect()
+        await ctx.send("👋 Bot đã rời khỏi voice channel", delete_after=10)
+    else:
+        await ctx.send("⚠️ Bot hiện không ở trong voice channel.", delete_after=10)
 
 # --- Auto leave ---
 @bot.event
