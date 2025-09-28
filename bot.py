@@ -11,7 +11,8 @@ TOKEN = os.getenv("TOKEN")
 if not TOKEN:
     raise ValueError("❌ Không tìm thấy TOKEN trong .env")
 
-intents = nextcord.Intents.default()
+intents = discord.Intents.default()
+intents.message_content = True  # 👈 cần bật để bot đọc nội dung tin nhắn
 intents.voice_states = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -193,3 +194,4 @@ async def on_voice_state_update(member, before, after):
 
 # --- Run bot ---
 bot.run(TOKEN)
+
