@@ -1,6 +1,6 @@
-import discord
-from discord.ext import commands
-from discord import app_commands
+import nextcord as discord
+from nextcord.ext import commands
+from nextcord import app_commands
 import yt_dlp
 import os
 from dotenv import load_dotenv
@@ -201,3 +201,4 @@ async def on_voice_state_update(member, before, after):
 
 # --- Run bot ---
 bot.run(TOKEN)
+
