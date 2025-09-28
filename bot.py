@@ -11,9 +11,11 @@ TOKEN = os.getenv("TOKEN")
 if not TOKEN:
     raise ValueError("❌ Không tìm thấy TOKEN trong .env")
 
-intents = discord.Intents.default()
-intents.message_content = True  # 👈 cần bật để bot đọc nội dung tin nhắn
+# --- Intents ---
+intents = nextcord.Intents.default()
+intents.message_content = True  # để tránh warning MissingMessageContentIntent
 intents.voice_states = True
+
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # --- YT-DLP config ---
@@ -156,7 +158,7 @@ async def on_ready():
     print(f"✅ Bot đã đăng nhập: {bot.user}")
 
 
-# --- Slash command nhạc ---
+# --- Play music ---
 @bot.slash_command(name="nhac", description="Phát nhạc hoặc playlist từ YouTube")
 async def nhac(interaction: nextcord.Interaction, url: str):
     await interaction.response.defer(ephemeral=True)  # tránh lỗi Unknown interaction
@@ -194,4 +196,3 @@ async def on_voice_state_update(member, before, after):
 
 # --- Run bot ---
 bot.run(TOKEN)
-
