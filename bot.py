@@ -34,12 +34,14 @@ play_channels = {}
 now_playing_messages = {}
 
 # --- Audio extraction ---
-def get_audio_source(url: str):
+def get_audio_source(url: str, limit=25):
     with yt_dlp.YoutubeDL(ytdlp_opts) as ydl:
         info = ydl.extract_info(url, download=False)
         if 'entries' in info:
-            urls = [entry['url'] for entry in info['entries']]
-            names = [entry.get('title', 'Không rõ') for entry in info['entries']]
+            # Lấy tối đa `limit` bài
+            entries = info['entries'][:limit]
+            urls = [entry['url'] for entry in entries]
+            names = [entry.get('title', 'Không rõ') for entry in entries]
             return urls, names
         else:
             return [info['url']], [info.get('title', 'Không rõ')]
@@ -178,6 +180,8 @@ async def nhac(interaction: discord.Interaction, url: str):
     try:
         play_channels[interaction.guild.id] = interaction.channel
         urls, names = get_audio_source(url)
+        urls = urls[:25]
+        names = names[:25]
         queues.setdefault(interaction.guild.id, []).extend(urls)
         titles.setdefault(interaction.guild.id, []).extend(names)
         if not vc.is_playing():
