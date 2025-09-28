@@ -190,33 +190,64 @@ async def nhac(interaction: discord.Interaction, url: str):
     except Exception as e:
         await interaction.followup.send(f"❌ Lỗi khi phát nhạc: {e}", ephemeral=True)
 
-# --- Text to Speech command ---
-@bot.tree.command(name="noichuyen", description="Chuyển văn bản thành giọng nói (tiếng Việt)")
-async def noichuyen(interaction: discord.Interaction, text: str):
-    await interaction.response.defer()
-    if not interaction.user.voice or not interaction.user.voice.channel:
-        await interaction.followup.send("❌ Bạn cần vào voice channel trước.")
+# --- Hàm chung TTS ---
+async def tts_play(interaction_or_ctx, text: str, is_slash=False):
+    guild = interaction_or_ctx.guild
+    author = interaction_or_ctx.user if is_slash else interaction_or_ctx.author
+    channel_send = interaction_or_ctx.channel
+    if not author.voice or not author.voice.channel:
+        msg = "❌ Bạn cần vào voice channel trước."
+        if is_slash:
+            await interaction_or_ctx.followup.send(msg, ephemeral=True)
+        else:
+            await channel_send.send(msg, delete_after=10)
         return
-    vc = interaction.guild.voice_client
+
+    vc = guild.voice_client
     if vc is None:
-        vc = await interaction.user.voice.channel.connect()
+        vc = await author.voice.channel.connect()
+    
     try:
-        filename = f"tts_{interaction.guild.id}.mp3"
+        filename = f"tts_{guild.id}.mp3"
         tts = gTTS(text=text, lang="vi")
         tts.save(filename)
+
         if vc.is_playing():
             vc.stop()
+
         def after_play(error, file=filename):
             if os.path.exists(file):
                 try:
                     os.remove(file)
                 except Exception as e:
                     print(f"Lỗi xóa file {file}: {e}")
+
         source = discord.FFmpegPCMAudio(filename)
         vc.play(source, after=functools.partial(after_play))
-        await interaction.followup.send(f"🗣 Bot đang đọc: **{text}**")
+
+        msg = f"🗣 Bot đang nói: **{text}**"
+        if is_slash:
+            await interaction_or_ctx.followup.send(msg)
+        else:
+            await channel_send.send(msg, delete_after=15)
+
     except Exception as e:
-        await interaction.followup.send(f"❌ Lỗi khi chuyển văn bản thành giọng nói: {e}")
+        msg = f"❌ Lỗi khi chuyển văn bản thành giọng nói: {e}"
+        if is_slash:
+            await interaction_or_ctx.followup.send(msg)
+        else:
+            await channel_send.send(msg, delete_after=10)
+
+# --- Slash command /noichuyen ---
+@bot.tree.command(name="noichuyen", description="Chuyển văn bản thành giọng nói (tiếng Việt)")
+async def noichuyen(interaction: discord.Interaction, text: str):
+    await interaction.response.defer()
+    await tts_play(interaction, text, is_slash=True)
+
+# --- Prefix command h!say ---
+@bot.command(name="say")
+async def h_say(ctx: commands.Context, *, text: str):
+    await tts_play(ctx, text)
 
 # --- Prefix command h!leave ---
 @bot.command(name="leave")
