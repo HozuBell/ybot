@@ -4,10 +4,3 @@ server:
 lavalink:
   server:
     password: "Khongcopassdau"
-
-logging:
-  file:
-    max-history: 30
-  level:
-    root: INFO
-    lavalink: INFO
