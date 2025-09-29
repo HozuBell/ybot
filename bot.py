@@ -107,20 +107,7 @@ async def h_sad(ctx: commands.Context):
 @bot.command(name="mmblp")
 async def k_mmblp(ctx: commands.Context):
     await tts_play(ctx, "Phong ơi, sửa mic đi")
-# --- Prefix command k!dh ---
-@bot.command(name="dh")
-async def k_dh(ctx: commands.Context):
-    await tts_play(ctx, "đang học")
-# --- Slash command /x! ---
-@bot.tree.command(name="x!", description="Xem danh sách các lệnh prefix mà bot hỗ trợ")
-async def xem_lenh(interaction: discord.Interaction):
-    prefix_commands = """
-**📜 Danh sách lệnh prefix:**
-- `h!say [nội dung]` → Bot đọc nội dung bạn nhập
-- `k!dh` → Bot nói: *đang học*
-- `h!leave` → Bot rời kênh voice
-    """
-    await interaction.response.send_message(prefix_commands)
+
 # --- Prefix command h!leave ---
 @bot.command(name="leave")
 async def h_leave(ctx: commands.Context):
@@ -153,5 +140,3 @@ async def on_ready():
 
 # --- Run bot ---
 bot.run(TOKEN)
-
-
