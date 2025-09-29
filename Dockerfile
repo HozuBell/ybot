@@ -1,8 +1,5 @@
 FROM python:3.11-slim
 
-# Cài ffmpeg và opus
-RUN apt-get update && apt-get install -y ffmpeg libopus0 && rm -rf /var/lib/apt/lists/*
-
 # Cài ffmpeg và libopus
 RUN apt-get update && apt-get install -y ffmpeg libopus0 && rm -rf /var/lib/apt/lists/*
 
