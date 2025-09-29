@@ -4,7 +4,7 @@ FROM python:3.10-slim AS bot
 WORKDIR /app
 
 # Cài đặt ffmpeg và Java để chạy Lavalink
-RUN apt-get update && apt-get install -y ffmpeg openjdk-17-jre-headless && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ffmpeg openjdk-21-jre-headless && rm -rf /var/lib/apt/lists/*
 
 # Copy bot code và requirements
 COPY requirements.txt .
