@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 # --- Load env ---
 load_dotenv()
-TOKEN = os.getenv("DISCORD_TOKEN")
+TOKEN = os.getenv("TOKEN")
 
 # --- BOT ---
 intents = discord.Intents.default()
@@ -257,3 +257,4 @@ async def connect_nodes():
 
 
 bot.run(TOKEN)
+
