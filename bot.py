@@ -107,6 +107,11 @@ async def h_sad(ctx: commands.Context):
 @bot.command(name="mmblp")
 async def k_mmblp(ctx: commands.Context):
     await tts_play(ctx, "Phong ơi, sửa mic đi")
+# --- Prefix command k!dh ---
+@bot.command(name="dh")
+async def k_dh(ctx: commands.Context):
+    await tts_play(ctx, "đang học")
+
 
 # --- Prefix command h!leave ---
 @bot.command(name="leave")
@@ -140,3 +145,4 @@ async def on_ready():
 
 # --- Run bot ---
 bot.run(TOKEN)
+
