@@ -86,6 +86,10 @@ async def h_leave(ctx: commands.Context):
         await ctx.send("👋 Bot đã rời khỏi voice channel")
     else:
         await ctx.send("⚠️ Bot hiện không ở trong voice channel.")
+# --- Prefix command h!sad ---
+@bot.command(name="sad")
+async def h_sad(ctx: commands.Context):
+    await tts_play(ctx, "Phong ngáo")
 
 # --- Auto leave khi kênh trống ---
 @bot.event
@@ -108,3 +112,4 @@ async def on_ready():
 
 # --- Run bot ---
 bot.run(TOKEN)
+
