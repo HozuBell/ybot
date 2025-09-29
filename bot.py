@@ -53,7 +53,9 @@ async def tts_play(interaction_or_ctx, text: str, is_slash=False):
         source = discord.FFmpegPCMAudio(filename)
         vc.play(source, after=functools.partial(after_play))
 
-        msg = f"🗣 Bot đang nói: **{text}**"
+        # Hiển thị tên người dùng
+        username = author.display_name
+        msg = f"🗣 {username} đang dùng bot và nói: **{text}**"
         if is_slash:
             await interaction_or_ctx.followup.send(msg)
         else:
@@ -77,6 +79,11 @@ async def noichuyen(interaction: discord.Interaction, text: str):
 async def h_say(ctx: commands.Context, *, text: str):
     await tts_play(ctx, text)
 
+# --- Prefix command h!sad ---
+@bot.command(name="sad")
+async def h_sad(ctx: commands.Context):
+    await tts_play(ctx, "Phong ngáo")
+
 # --- Prefix command h!leave ---
 @bot.command(name="leave")
 async def h_leave(ctx: commands.Context):
@@ -86,10 +93,6 @@ async def h_leave(ctx: commands.Context):
         await ctx.send("👋 Bot đã rời khỏi voice channel")
     else:
         await ctx.send("⚠️ Bot hiện không ở trong voice channel.")
-# --- Prefix command h!sad ---
-@bot.command(name="sad")
-async def h_sad(ctx: commands.Context):
-    await tts_play(ctx, "Phong ngáo")
 
 # --- Auto leave khi kênh trống ---
 @bot.event
@@ -112,4 +115,3 @@ async def on_ready():
 
 # --- Run bot ---
 bot.run(TOKEN)
-
