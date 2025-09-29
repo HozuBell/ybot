@@ -82,7 +82,7 @@ async def h_say(ctx: commands.Context, *, text: str):
 # --- Prefix command h!sad ---
 @bot.command(name="sad")
 async def h_sad(ctx: commands.Context):
-    await tts_play(ctx, "Phong ngáo")
+    await tts_play(ctx, "Phong ơi")
 
 # --- Prefix command h!leave ---
 @bot.command(name="leave")
@@ -115,3 +115,4 @@ async def on_ready():
 
 # --- Run bot ---
 bot.run(TOKEN)
+
