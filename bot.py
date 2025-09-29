@@ -6,6 +6,9 @@ import os
 import functools
 from collections import deque
 from dotenv import load_dotenv
+import discord.opus
+if not discord.opus.is_loaded():
+    discord.opus.load_opus('libopus.so.0')
 
 # --- Load .env ---
 load_dotenv()
@@ -140,3 +143,4 @@ async def on_ready():
 
 # --- Run bot ---
 bot.run(TOKEN)
+
