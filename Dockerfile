@@ -1,15 +1,19 @@
-FROM python:3.10-slim
+# Base image Python
+FROM python:3.11-slim
 
+# Cài đặt ffmpeg + Java
+RUN apt-get update && apt-get install -y ffmpeg openjdk-21-jre && rm -rf /var/lib/apt/lists/*
+
+# Copy code bot
 WORKDIR /app
-
-# Cài ffmpeg + Java 21 để chạy Lavalink
-RUN apt-get update && apt-get install -y ffmpeg openjdk-21-jre-headless && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements và cài bot
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy tất cả file
 COPY . .
 
-# Chạy Lavalink + Bot
+# Mở port Lavalink
+EXPOSE 2333
+
+# Chạy Lavalink song song với bot
 CMD java -jar Lavalink.jar & python bot.py
