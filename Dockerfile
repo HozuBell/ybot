@@ -1,24 +1,16 @@
-FROM python:3.11-slim
+# --- Layer 1: Python bot ---
+FROM python:3.11-slim AS bot
 
-# Cài ffmpeg
-RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
-
-# Copy code vào container
 WORKDIR /app
-COPY . /app
 
-# Cài thư viện Python
+# Cài đặt ffmpeg và Java để chạy Lavalink
+RUN apt-get update && apt-get install -y ffmpeg openjdk-17-jre && rm -rf /var/lib/apt/lists/*
+
+# Copy bot code và requirements
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Lệnh chạy bot
-CMD ["python", "bot.py"]
-#lavalink
-FROM openjdk:17-jdk-slim
+COPY . .
 
-WORKDIR /app
-COPY Lavalink.jar .
-COPY application.yml .
-
-EXPOSE 2333
-
-CMD ["java", "-jar", "Lavalink.jar"]
+# --- Run bot + Lavalink ---
+CMD java -jar Lavalink.jar & python bot.py
