@@ -38,8 +38,8 @@ def get_audio_source(url: str, limit=25):
     with yt_dlp.YoutubeDL(ytdlp_opts) as ydl:
         info = ydl.extract_info(url, download=False)
         if 'entries' in info:
-            # Lấy tối đa `limit` bài
-            entries = info['entries'][:limit]
+            entries = [e for e in info['entries'] if e]  # skip unavailable
+            entries = entries[:limit]
             urls = [entry['url'] for entry in entries]
             names = [entry.get('title', 'Không rõ') for entry in entries]
             return urls, names
@@ -152,14 +152,12 @@ async def update_now_playing(guild_id, title=None):
 @bot.event
 async def on_ready():
     print(f"✅ Bot đã đăng nhập: {bot.user}")
-    # Sync từng guild ngay lập tức
     for guild in bot.guilds:
         try:
             await bot.tree.sync(guild=discord.Object(id=guild.id))
             print(f"🔗 Commands synced cho guild: {guild.name}")
         except Exception as e:
             print(f"⚠️ Lỗi sync cho {guild.name}: {e}")
-    # Đồng thời sync global
     try:
         await bot.tree.sync()
         print("🔗 Commands global sync complete")
@@ -174,12 +172,30 @@ async def nhac(interaction: discord.Interaction, url: str):
     if not interaction.user.voice:
         await interaction.followup.send("❌ Bạn phải ở trong voice channel trước.", ephemeral=True)
         return
+
+    # Retry connect voice tối đa 3 lần
     vc = interaction.guild.voice_client
-    if vc is None:
-        vc = await interaction.user.voice.channel.connect()
+    for attempt in range(3):
+        try:
+            if vc is None:
+                vc = await interaction.user.voice.channel.connect()
+            break
+        except IndexError:
+            await asyncio.sleep(1)
+        except Exception as e:
+            await interaction.followup.send(f"Lỗi kết nối voice: {e}", ephemeral=True)
+            return
+
+    if not vc:
+        await interaction.followup.send("❌ Không thể kết nối voice sau 3 lần thử.", ephemeral=True)
+        return
+
     try:
         play_channels[interaction.guild.id] = interaction.channel
         urls, names = get_audio_source(url)
+        if not urls:
+            await interaction.followup.send("❌ Không có video nào hợp lệ để phát.", ephemeral=True)
+            return
         urls = urls[:25]
         names = names[:25]
         queues.setdefault(interaction.guild.id, []).extend(urls)
