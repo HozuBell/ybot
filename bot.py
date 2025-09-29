@@ -33,18 +33,26 @@ titles = {}
 play_channels = {}
 now_playing_messages = {}
 
-# --- Audio extraction ---
+# --- Audio extraction (loại bỏ video vi phạm bản quyền / unavailable) ---
 def get_audio_source(url: str, limit=25):
     with yt_dlp.YoutubeDL(ytdlp_opts) as ydl:
         info = ydl.extract_info(url, download=False)
+        urls, names = [], []
         if 'entries' in info:
-            entries = [e for e in info['entries'] if e]  # skip unavailable
-            entries = entries[:limit]
-            urls = [entry['url'] for entry in entries]
-            names = [entry.get('title', 'Không rõ') for entry in entries]
-            return urls, names
+            for entry in info['entries']:
+                if not entry:
+                    continue
+                # Skip video private / deleted / unplayable
+                if entry.get('is_private') or entry.get('age_limit') or entry.get('availability') in ['private', 'deleted', 'unplayable']:
+                    continue
+                urls.append(entry['url'])
+                names.append(entry.get('title', 'Không rõ'))
+                if len(urls) >= limit:
+                    break
         else:
-            return [info['url']], [info.get('title', 'Không rõ')]
+            urls.append(info['url'])
+            names.append(info.get('title', 'Không rõ'))
+        return urls, names
 
 # --- Music Controls ---
 class MusicControls(discord.ui.View):
@@ -101,13 +109,15 @@ def format_queue_embed(guild_id):
     )
     return embed
 
-# --- Play next song ---
+# --- Play next song (tự động bỏ video không phát được) ---
 def play_next(guild_id):
-    if queues.get(guild_id):
+    while queues.get(guild_id):
         url = queues[guild_id].pop(0)
         title = titles[guild_id].pop(0)
         vc = discord.utils.get(bot.voice_clients, guild__id=guild_id)
-        if vc:
+        if not vc:
+            continue
+        try:
             source = discord.FFmpegPCMAudio(
                 url,
                 before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
@@ -120,7 +130,12 @@ def play_next(guild_id):
                 play_next(guild_id)
             vc.play(source, after=after_play)
             asyncio.run_coroutine_threadsafe(update_now_playing(guild_id, title), bot.loop)
+            break  # Nếu phát thành công, thoát vòng lặp
+        except Exception as e:
+            print(f"⚠️ Bỏ bài {title} vì không phát được: {e}")
+            continue  # Thử bài tiếp theo
     else:
+        # Queue trống hoặc không phát được bài nào
         vc = discord.utils.get(bot.voice_clients, guild__id=guild_id)
         if vc and not vc.is_playing():
             asyncio.run_coroutine_threadsafe(vc.disconnect(), bot.loop)
@@ -172,30 +187,12 @@ async def nhac(interaction: discord.Interaction, url: str):
     if not interaction.user.voice:
         await interaction.followup.send("❌ Bạn phải ở trong voice channel trước.", ephemeral=True)
         return
-
-    # Retry connect voice tối đa 3 lần
     vc = interaction.guild.voice_client
-    for attempt in range(3):
-        try:
-            if vc is None:
-                vc = await interaction.user.voice.channel.connect()
-            break
-        except IndexError:
-            await asyncio.sleep(1)
-        except Exception as e:
-            await interaction.followup.send(f"Lỗi kết nối voice: {e}", ephemeral=True)
-            return
-
-    if not vc:
-        await interaction.followup.send("❌ Không thể kết nối voice sau 3 lần thử.", ephemeral=True)
-        return
-
+    if vc is None:
+        vc = await interaction.user.voice.channel.connect()
     try:
         play_channels[interaction.guild.id] = interaction.channel
         urls, names = get_audio_source(url)
-        if not urls:
-            await interaction.followup.send("❌ Không có video nào hợp lệ để phát.", ephemeral=True)
-            return
         urls = urls[:25]
         names = names[:25]
         queues.setdefault(interaction.guild.id, []).extend(urls)
@@ -206,7 +203,7 @@ async def nhac(interaction: discord.Interaction, url: str):
     except Exception as e:
         await interaction.followup.send(f"❌ Lỗi khi phát nhạc: {e}", ephemeral=True)
 
-# --- Hàm chung TTS ---
+# --- TTS chung ---
 async def tts_play(interaction_or_ctx, text: str, is_slash=False):
     guild = interaction_or_ctx.guild
     author = interaction_or_ctx.user if is_slash else interaction_or_ctx.author
