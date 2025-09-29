@@ -28,7 +28,7 @@ async def tts_play(interaction_or_ctx, text: str, is_slash=False):
         if is_slash:
             await interaction_or_ctx.followup.send(msg, ephemeral=True)
         else:
-            await channel_send.send(msg, delete_after=10)
+            await channel_send.send(msg)
         return
 
     vc = guild.voice_client
@@ -57,14 +57,14 @@ async def tts_play(interaction_or_ctx, text: str, is_slash=False):
         if is_slash:
             await interaction_or_ctx.followup.send(msg)
         else:
-            await channel_send.send(msg, delete_after=15)
+            await channel_send.send(msg)
 
     except Exception as e:
         msg = f"❌ Lỗi khi chuyển văn bản thành giọng nói: {e}"
         if is_slash:
             await interaction_or_ctx.followup.send(msg)
         else:
-            await channel_send.send(msg, delete_after=10)
+            await channel_send.send(msg)
 
 # --- Slash command /noichuyen ---
 @bot.tree.command(name="noichuyen", description="Chuyển văn bản thành giọng nói (tiếng Việt)")
@@ -83,9 +83,9 @@ async def h_leave(ctx: commands.Context):
     vc = ctx.guild.voice_client
     if vc:
         await vc.disconnect()
-        await ctx.send("👋 Bot đã rời khỏi voice channel", delete_after=10)
+        await ctx.send("👋 Bot đã rời khỏi voice channel")
     else:
-        await ctx.send("⚠️ Bot hiện không ở trong voice channel.", delete_after=10)
+        await ctx.send("⚠️ Bot hiện không ở trong voice channel.")
 
 # --- Auto leave khi kênh trống ---
 @bot.event
