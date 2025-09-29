@@ -16,4 +16,4 @@ COPY . .
 EXPOSE 2333
 
 # Chạy Lavalink song song với bot
-CMD java -jar Lavalink.jar & python bot.py
+CMD bash -c "java -jar Lavalink.jar & sleep 20 && python bot.py"
