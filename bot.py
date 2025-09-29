@@ -199,7 +199,7 @@ async def connect_nodes():
         bot=bot,
         host="127.0.0.1",
         port=2333,
-        password="youshallnotpass"
+        password="Khongcopassdau"
     )
 
 @bot.event
@@ -326,3 +326,4 @@ async def search_cmd(ctx, *, keyword: str):
 
 # --- Run bot ---
 bot.run(TOKEN)
+
