@@ -12,11 +12,11 @@ TOKEN = os.getenv("TOKEN")
 if not TOKEN:
     raise ValueError("❌ Không tìm thấy TOKEN trong .env")
 
-# Prefix h! cho bot
+# Prefix h! và k! cho bot
 intents = discord.Intents.default()
 intents.voice_states = True
 intents.message_content = True
-bot = commands.Bot(command_prefix="h!", intents=intents)
+bot = commands.Bot(command_prefix=["h!", "k!"], intents=intents)
 
 # --- Hàm chung TTS ---
 async def tts_play(interaction_or_ctx, text: str, is_slash=False):
@@ -82,7 +82,12 @@ async def h_say(ctx: commands.Context, *, text: str):
 # --- Prefix command h!sad ---
 @bot.command(name="sad")
 async def h_sad(ctx: commands.Context):
-    await tts_play(ctx, "Phong ơi")
+    await tts_play(ctx, "Phong ngáo")
+
+# --- Prefix command k!mmblp ---
+@bot.command(name="mmblp")
+async def k_mmblp(ctx: commands.Context):
+    await tts_play(ctx, "Phong ơi, sửa mic đi")
 
 # --- Prefix command h!leave ---
 @bot.command(name="leave")
@@ -115,4 +120,3 @@ async def on_ready():
 
 # --- Run bot ---
 bot.run(TOKEN)
-
