@@ -8,6 +8,8 @@ from collections import deque
 from dotenv import load_dotenv
 import wavelink
 
+print("⚡ Wavelink version:", wavelink.__version__)
+
 # --- Load .env ---
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
@@ -326,3 +328,4 @@ async def search_cmd(ctx, *, keyword: str):
 
 # --- Run bot ---
 bot.run(TOKEN)
+
